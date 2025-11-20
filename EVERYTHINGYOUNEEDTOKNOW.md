@@ -47,6 +47,7 @@ The system features immutable request tracking, tendering process, multi-party i
 
 ## 3. System Architecture
 
+```text
 portal.js
 ├── portals/
 │   ├── adminPortal.js
@@ -60,6 +61,7 @@ portal.js
 │   └── testrpc.js
 └── contracts/
     └── Procurement.sol
+```
 
 ---
 
@@ -72,7 +74,7 @@ Example:
 NAME=Dept-CSE
 ROLE=requester
 PRIVATE_KEY=0x...
-RPC_URL=<https://college-rpc>
+RPC_URL=`<https://college-rpc>`
 CHAIN_ID=131313
 CONTRACT_ADDRESS=0x...
 
