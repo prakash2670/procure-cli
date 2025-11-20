@@ -151,8 +151,6 @@ IDs are automatically generated.
 
 [Open full-size diagram](./images/procure-cli-workflow.png)
 
-### 🔗 View Mermaid Source Online Pro-Flow
-
 <[View it HERE](https://www.mermaidchart.com/d/a050d6cc-830e-4f67-b1e1-a4a0246e65b9)>
 
 ## 9. Procurement.sol Dependency Graph
@@ -160,8 +158,6 @@ IDs are automatically generated.
 ![Dependency Graph](./images/procure_sol-workflow.png)
 
 [Open full-size diagram](./images/procure_sol-workflow.png)
-
-### 🔗 View Mermaid Source Online Sol-Flow
 
 <[View it HERE](https://www.mermaidchart.com/d/170eb783-4c14-4d3f-85cc-0a12b992dede)>
 
