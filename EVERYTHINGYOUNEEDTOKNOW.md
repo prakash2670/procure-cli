@@ -171,25 +171,9 @@ graph TD
 
 ## 9. Procurement.sol Dependency Graph
 
-**MERMAID PLACEHOLDER**
-(Replace this block with the generated mermaid diagram when ready)
+![Dependency Graph](./docs/images/dependency_graph.png)
 
-```mermaid
-graph TD
-    A[Procurement.sol] --> B[Request Struct]
-    A --> C[Bid Struct]
-    A --> D[Status Enum]
-
-    A --> E[createRequest()]
-    A --> F[approveRequest()]
-    A --> G[submitBid()]
-    A --> H[awardTender()]
-    A --> I[markDelivered()]
-    A --> J[confirmReceived()]
-    A --> K[payRequest()]
-```
-
----
+[Open full-size diagram](./docs/images/dependency_graph.png)
 
 ## 10. How the CLI Works
 
