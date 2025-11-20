@@ -147,33 +147,23 @@ IDs are automatically generated.
 
 ## 8. Project Dependency Graph
 
-**MERMAID PLACEHOLDER**
-(Replace this block with the generated mermaid diagram when ready)
+![Dependency Graph](./images/procure-cli-workflow.png)
 
-```mermaid
-graph TD
-    A[portal.js] --> B[adminPortal.js]
-    A --> C[requesterPortal.js]
-    A --> D[vendorPortal.js]
+[Open full-size diagram](./images/procure-cli-workflow.png)
 
-    B --> E[lib/eth.js]
-    C --> E[lib/eth.js]
-    D --> E[lib/eth.js]
+### 🔗 View Mermaid Source Online Pro-Flow
 
-    E --> F[lib/helpers.js]
-    E --> G[contracts/Procurement.sol (ABI)]
-
-    H[hardhat.config.js] --> I[scripts/deploy.js]
-    I --> G
-```
-
----
+<[View it HERE](https://www.mermaidchart.com/d/a050d6cc-830e-4f67-b1e1-a4a0246e65b9)>
 
 ## 9. Procurement.sol Dependency Graph
 
-![Dependency Graph](./docs/images/dependency_graph.png)
+![Dependency Graph](./images/procure_sol-workflow.png)
 
-[Open full-size diagram](./docs/images/dependency_graph.png)
+[Open full-size diagram](./images/procure_sol-workflow.png)
+
+### 🔗 View Mermaid Source Online Sol-Flow
+
+<[View it HERE](https://www.mermaidchart.com/d/170eb783-4c14-4d3f-85cc-0a12b992dede)>
 
 ## 10. How the CLI Works
 
