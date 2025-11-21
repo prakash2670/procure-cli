@@ -1,7 +1,20 @@
 // portals/vendorPortal.js
 const inquirer = require("inquirer");
-const { loadProfileEnv, makeProvider, makeWallet, loadContractInstance, ethers } = require("../lib/eth");
+const {
+  loadProfileEnv,
+  makeProvider,
+  makeWallet,
+  loadContractInstance,
+  ethers,
+  loadAllProfiles,
+} = require("../lib/eth");
 const { statusName } = require("../lib/helpers");
+
+function short(a) { return a.substring(0,10) + "..."; }
+function getName(a, list) {
+  const m = list.find(p => p.address.toLowerCase() === a.toLowerCase());
+  return m ? m.name : short(a);
+}
 
 async function vendorMenu(profilePath) {
   const env = loadProfileEnv(profilePath);
@@ -9,73 +22,107 @@ async function vendorMenu(profilePath) {
   const wallet = makeWallet(env, provider);
   const contract = loadContractInstance(env, wallet);
 
-  console.log(`\nVendor Portal — ${env.NAME || "Vendor"} (${wallet.address})\n`);
+  const all = loadAllProfiles();
+  const vendors = all.filter(x => x.role === "vendor");
+  const requesters = all.filter(x => x.role === "requester");
+
+  console.log(`\nVendor Portal — ${env.NAME} (${wallet.address})\n`);
 
   while (true) {
     const { opt } = await inquirer.prompt({
-      name: "opt",
-      type: "list",
-      message: `Vendor Menu`,
-      choices: [
-        { name: "List open/tendering requests", value: "listOpen" },
-        { name: "View request details", value: "show" },
-        { name: "Submit bid for request", value: "bid" },
-        { name: "View my awarded requests", value: "myAwards" },
-        { name: "Mark delivered (for awarded request)", value: "deliver" },
-        { name: "Back to Role Selection", value: "back" },
-        { name: "Exit Program", value: "exit" }
+      name:"opt",
+      type:"list",
+      message:"Vendor Menu",
+      choices:[
+        { name:"List open tenders", value:"list"},
+        { name:"Show request details", value:"show"},
+        { name:"Place bid", value:"bid"},
+        { name:"Mark delivered", value:"deliver"},
+        { name:"Back", value:"back"},
+        { name:"Exit", value:"exit"},
       ]
     });
 
-    if (opt === "exit") process.exit(0);
-    if (opt === "back") return "back";
+    if (opt==="exit") process.exit(0);
+    if (opt==="back") return;
 
     try {
-      if (opt === "listOpen") {
+      // LIST tendering = status == 2
+      if (opt==="list") {
         const ids = await contract.getRequestIds();
-        let found = false;
-        for (const i of ids) {
-          const r = await contract.getRequest(i);
-          const st = Number(r[4]);
-          if (st === 2) { // Tendering
-            found = true;
-            console.log(`ID ${i.toString()} - ${r[2]} - est ${ethers.formatEther(r[3])} ETH - requester ${r[1]}`);
-          }
+        const tendering = [];
+        for (const id of ids) {
+          const r = await contract.getRequest(id);
+          if (Number(r[4]) === 2) tendering.push(id.toString());
         }
-        if (!found) console.log("No open tendering requests.");
-      } else if (opt === "show") {
-        const { id } = await inquirer.prompt({ name: "id", message: "Request ID", type: "input" });
-        const r = await contract.getRequest(id);
-        console.table({
-          id: r[0].toString(), requester: r[1], description: r[2],
-          estimatedETH: ethers.formatEther(r[3]), status: statusName(r[4]), winner: r[6]
-        });
-      } else if (opt === "bid") {
-        const { id, amount } = await inquirer.prompt([
-          { name: "id", message: "Request ID", type: "input" },
-          { name: "amount", message: "Bid amount (ETH)", type: "input" }
-        ]);
-        const wei = ethers.parseEther(amount);
-        const tx = await contract.submitBid(id, wei);
-        console.log("Tx:", tx.hash); await tx.wait(); console.log("Bid submitted.");
-      } else if (opt === "myAwards") {
-        const ids = await contract.getRequestIds();
-        let found = false;
-        for (const i of ids) {
-          const r = await contract.getRequest(i);
-          if (r[6] && r[6].toLowerCase() === wallet.address.toLowerCase()) {
-            found = true;
-            console.log(`ID ${i.toString()} - ${r[2]} - winningBid ${ethers.formatEther(r[7])} ETH - status ${statusName(r[4])}`);
-          }
-        }
-        if (!found) console.log("No awarded requests for you.");
-      } else if (opt === "deliver") {
-        const { id } = await inquirer.prompt({ name: "id", message: "Request ID to mark delivered", type: "input" });
-        const tx = await contract.markDelivered(id);
-        console.log("Tx:", tx.hash); await tx.wait(); console.log("Marked delivered.");
+        if (tendering.length===0) console.log("No open tenders.");
+        else console.log("Open tenders:", tendering.join(", "));
       }
+
+      // SHOW DETAILS
+      else if (opt==="show") {
+        const {id} = await inquirer.prompt({name:"id", message:"Request ID"});
+        const r = await contract.getRequest(id);
+
+        const reqName = getName(r[1], requesters);
+        const winName = r[6] === ethers.ZeroAddress ? "—" : getName(r[6], vendors);
+
+        console.table({
+          id:r[0].toString(),
+          requester:`${reqName} (${short(r[1])})`,
+          description:r[2],
+          estimatedETH:ethers.formatEther(r[3]),
+          status:statusName(r[4]),
+          winner: r[6]===ethers.ZeroAddress ? "—" : `${winName} (${short(r[6])})`,
+          winningBidETH:r[7].toString()==="0"?"—":ethers.formatEther(r[7]),
+          delivered:r[8],
+        });
+      }
+
+      // PLACE BID — uses ONLY submitBid
+      else if (opt==="bid") {
+        const {id, amt} = await inquirer.prompt([
+          {name:"id", message:"Request ID"},
+          {name:"amt", message:"Your Bid (ETH)"},
+        ]);
+
+        const wei = ethers.parseEther(amt);
+        try {
+          const tx = await contract.submitBid(id, wei);
+          console.log("Tx:", tx.hash);
+          await tx.wait();
+          console.log("Bid placed!");
+        } catch (err) {
+          console.log("❌ Cannot bid:", err.reason || err.message);
+        }
+      }
+
+      // MARK DELIVERED
+      else if (opt==="deliver") {
+        const {id} = await inquirer.prompt({name:"id", message:"Request ID"});
+        const r = await contract.getRequest(id);
+
+        if (r[6] === ethers.ZeroAddress) {
+          console.log("❌ No vendor assigned yet.");
+          continue;
+        }
+        if (r[6].toLowerCase() !== wallet.address.toLowerCase()) {
+          console.log("❌ You are not the winning vendor.");
+          continue;
+        }
+
+        try {
+          const tx = await contract.markDelivered(id);
+          console.log("Tx:", tx.hash);
+          await tx.wait();
+          console.log("Delivered marked.");
+        } catch (err) {
+          console.log("❌ Error:", err.reason || err.message);
+        }
+      }
+
     } catch (e) {
-      console.error("Error:", e && e.message ? e.message : e);
+      console.log("❌ Error:", e.reason || e.message);
     }
   }
 }
