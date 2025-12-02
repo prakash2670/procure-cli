@@ -132,45 +132,48 @@ async function adminMenu(profilePath) {
 
       // AWARD TENDER (Auto vendor + auto amount)
       else if (opt === "award") {
-        const { reqId } = await inquirer.prompt({
-          name: "reqId",
-          message: "Request ID",
-          type: "input",
-        });
+      const { reqId } = await inquirer.prompt({
+        name: "reqId",
+        message: "Request ID",
+        type: "input",
+      });
 
-        const bids = await contract.getBids(reqId);
-        if (!bids || bids.length === 0) {
-          console.log("No bids available for this request!");
-          continue;
+      const bids = await contract.getBids(reqId);
+      if (!bids || bids.length === 0) {
+        console.log("No bids available for this request!");
+        continue;
+      }
+
+      // Convert BigInt amounts to Number/BigInt-comparable form
+      // Find lowest bid
+      let lowest = bids[0];
+      for (let i = 1; i < bids.length; i++) {
+        if (bids[i].amount < lowest.amount) {
+          lowest = bids[i];
         }
+      }
 
-        // Build selection list
-        const choices = bids.map((b, i) => {
-          const vendorName = getNameFromAddress(b.vendor, vendorProfiles);
-          return {
-            name: `${vendorName} (${short(b.vendor)}) - ${ethers.formatEther(b.amount)} ETH`,
-            value: i,
-          };
-        });
+      const vendorName = getNameFromAddress(lowest.vendor, vendorProfiles);
 
-        const { winnerIndex } = await inquirer.prompt({
-          name: "winnerIndex",
-          type: "list",
-          message: "Select vendor to award:",
-          choices,
-        });
+      console.log(`
+    ============================
+    Auto-Selecting Lowest Bid
+    ============================
+    Winner: ${vendorName} (${short(lowest.vendor)})
+    Bid Amount: ${ethers.formatEther(lowest.amount)} ETH
+    ============================
+      `);
 
-        const winningBid = bids[winnerIndex];
-
-        console.log(
-          `\nAwarding to ${short(winningBid.vendor)} for ${ethers.formatEther(winningBid.amount)} ETH`
-        );
-
-        const tx = await contract.awardTender(reqId, winningBid.vendor, winningBid.amount);
+      try {
+        const tx = await contract.awardTender(reqId, lowest.vendor, lowest.amount);
         console.log("Tx:", tx.hash);
         await tx.wait();
         console.log("Tender awarded successfully.");
+      } catch (err) {
+        console.log("❌ Error awarding tender:", err.reason || err.message);
       }
+    }
+
 
       // PAY VENDOR (auto amount)
       else if (opt === "pay") {
